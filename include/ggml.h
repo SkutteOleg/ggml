@@ -214,6 +214,7 @@
 #    define GGML_ATTRIBUTE_FORMAT(...) __attribute__((format(printf, __VA_ARGS__)))
 #endif
 
+#include <setjmp.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -327,6 +328,9 @@ extern "C" {
 
     GGML_NORETURN GGML_ATTRIBUTE_FORMAT(3, 4)
     GGML_API void ggml_abort(const char * file, int line, const char * fmt, ...);
+    GGML_API extern jmp_buf ggml_error_jmp_buf;
+    GGML_API extern int ggml_error_jmp_set;
+    GGML_API const char* ggml_get_error_message(void);
 
     enum ggml_status {
         GGML_STATUS_ALLOC_FAILED = -2,

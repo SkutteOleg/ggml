@@ -25,6 +25,7 @@
 #include <limits.h>
 #include <stdarg.h>
 #include <signal.h>
+#include <setjmp.h>
 #if defined(__gnu_linux__)
 #include <syscall.h>
 #endif
@@ -241,20 +242,31 @@ static void ggml_print_backtrace(void) {
 }
 #endif
 
+GGML_API jmp_buf ggml_error_jmp_buf;
+GGML_API int ggml_error_jmp_set = 0;
+static char ggml_error_message[1024] = {0};
+
+GGML_API const char* ggml_get_error_message(void) {
+    return ggml_error_message;
+}
+
 void ggml_abort(const char * file, int line, const char * fmt, ...) {
-    fflush(stdout);
-
-    fprintf(stderr, "%s:%d: ", file, line);
-
     va_list args;
     va_start(args, fmt);
-    vfprintf(stderr, fmt, args);
+
+    snprintf(ggml_error_message, sizeof(ggml_error_message), "%s:%d: ", file, line);
+    vsnprintf(ggml_error_message + strlen(ggml_error_message),
+              sizeof(ggml_error_message) - strlen(ggml_error_message),
+              fmt, args);
+
     va_end(args);
 
-    fprintf(stderr, "\n");
-
-    ggml_print_backtrace();
-    abort();
+    if (ggml_error_jmp_set) {
+        longjmp(ggml_error_jmp_buf, 1);
+    } else {
+        // If no error handler is set, we still need to abort to prevent undefined behavior
+        abort();
+    }
 }
 
 #define GGML_DEBUG 0
