@@ -211,7 +211,11 @@ GGML_API ggml_abort_callback_t ggml_set_abort_callback(ggml_abort_callback_t cal
     return ret_val;
 }
 
+static bool g_ggml_abord_called = false;
+
 void ggml_abort(const char * file, int line, const char * fmt, ...) {
+    g_ggml_abord_called = true;
+
     fflush(stdout);
 
     char message[2048];
@@ -230,7 +234,15 @@ void ggml_abort(const char * file, int line, const char * fmt, ...) {
         ggml_print_backtrace();
     }
 
-    abort();
+    //abort();
+}
+
+bool ggml_is_aborted(void) {
+    return g_ggml_abord_called;
+}
+
+void ggml_reset_abort(void) {
+    g_ggml_abord_called = false;
 }
 
 // ggml_print_backtrace is registered with std::set_terminate by ggml.cpp
